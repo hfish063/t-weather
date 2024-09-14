@@ -31,7 +31,12 @@ struct Condition {
 }
 
 pub fn get_weather_forecast(location: &str, days: Option<u8>) -> Result<(), reqwest::Error> {
-    let params = [("key", std::env::var("KEY"))];
+    let params = [(
+        "key",
+        std::env::var("KEY"),
+        ("q", location),
+        ("days", days.unwrap_or(1)),
+    )];
     let response = reqwest::blocking::get(URL)?;
     Ok(())
 }
