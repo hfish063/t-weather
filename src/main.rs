@@ -1,4 +1,5 @@
 use clap::Parser;
+use dotenv;
 use ui::start;
 
 mod api;
@@ -17,6 +18,8 @@ struct Args {
 }
 
 fn main() {
+    dotenv::dotenv().ok();
+
     let args = Args::parse();
 
     let _ = start();
