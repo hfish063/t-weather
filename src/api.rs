@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 const URL: &str = "http://api.weatherapi.com/v1/";
 
 #[derive(Serialize, Deserialize)]
-struct Forecast {
+pub struct Forecast {
     location: Location,
     current: Current,
     condition: Condition,
