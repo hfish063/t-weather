@@ -15,6 +15,18 @@ use tui::{
     Terminal,
 };
 
+struct App {
+    input: String,
+}
+
+impl App {
+    fn new() -> App {
+        App {
+            input: String::new(),
+        }
+    }
+}
+
 #[derive(PartialEq, Eq)]
 enum Input {
     QUIT,
@@ -28,6 +40,8 @@ pub fn start() -> Result<(), io::Error> {
 
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
+
+    let mut app = App::new();
 
     loop {
         terminal.draw(|rect| {
@@ -86,12 +100,14 @@ pub fn start() -> Result<(), io::Error> {
                 if input == Input::QUIT {
                     break;
                 } else if input == Input::SEARCH {
-                    ()
+                    handle_input(&mut app);
                 }
             }
             None => (),
         }
     }
+
+    println!("{}", app.input);
 
     Ok(())
 }
@@ -110,6 +126,29 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
             ..
         }) => Some(Input::SEARCH),
         _ => None,
+    }
+}
+
+fn handle_input(app: &mut App) {
+    app.input.clear();
+
+    loop {
+        match read().expect("Failed to read user input") {
+            Event::Key(KeyEvent {
+                code: KeyCode::Char(c),
+                ..
+            }) => app.input.push(c),
+            Event::Key(KeyEvent {
+                code: KeyCode::Backspace,
+                ..
+            }) => {
+                app.input.pop();
+            }
+            Event::Key(KeyEvent {
+                code: KeyCode::Esc, ..
+            }) => break,
+            _ => (),
+        }
     }
 }
 
