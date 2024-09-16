@@ -1,15 +1,15 @@
 use serde::{Deserialize, Serialize};
+use serde_json::Value;
 
-const URL: &str = "http://api.weatherapi.com/v1/";
+const URL: &str = "http://api.weatherapi.com/v1/current.json";
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Forecast {
     location: Location,
     current: Current,
-    condition: Condition,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Location {
     name: String,
     region: String,
@@ -17,26 +17,39 @@ struct Location {
     localtime: String,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Current {
-    temp_c: i8,
-    temp_f: i8,
+    temp_c: f32,
+    temp_f: f32,
     is_day: u8,
+    condition: Condition,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 struct Condition {
     text: String,
     code: u16,
 }
 
-pub fn get_weather_forecast(location: &str, days: Option<u8>) -> Result<(), reqwest::Error> {
-    let params = [(
-        "key",
-        std::env::var("KEY"),
+pub fn get_weather_forecast(location: &str, days: Option<u8>) -> Option<Forecast> {
+    match api_fetch(location, days) {
+        Ok(result) => Some(result),
+        Err(_) => None,
+    }
+}
+
+fn api_fetch(location: &str, days: Option<u8>) -> Result<Forecast, reqwest::Error> {
+    let api_key: &str = &std::env::var("KEY").unwrap();
+    let params = [
+        ("key", api_key),
         ("q", location),
-        ("days", days.unwrap_or(1)),
-    )];
-    let response = reqwest::blocking::get(URL)?;
-    Ok(())
+        ("days", &days.unwrap_or(1).to_string()),
+    ];
+
+    let url = reqwest::Url::parse_with_params(URL, &params).unwrap();
+    let response = reqwest::blocking::get(url)?;
+    let body = response.text().unwrap();
+    let response: Forecast = serde_json::from_str(&body).unwrap();
+
+    Ok(response)
 }
