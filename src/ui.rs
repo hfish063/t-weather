@@ -65,11 +65,11 @@ pub fn start() -> Result<(), io::Error> {
                 .style(Style::default().fg(Color::Cyan))
                 .block(Block::default().borders(Borders::NONE));
 
-            // Search menu
+            // search menu
             let input = Paragraph::new("('/') to start typing")
                 .block(Block::default().borders(Borders::ALL).title("Search"));
 
-            // Weather forecast body
+            // weather forecast body
             let body = Block::default()
                 .title("Weather Forecast")
                 .borders(Borders::ALL)
@@ -77,7 +77,7 @@ pub fn start() -> Result<(), io::Error> {
                 .border_type(BorderType::Plain)
                 .style(Style::default().fg(Color::White));
 
-            // List of available commands
+            // list of available commands
             let footer = Paragraph::new("Press 'q': QUIT program")
                 .style(Style::default().fg(Color::LightGreen))
                 .alignment(Alignment::Left)
