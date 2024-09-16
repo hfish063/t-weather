@@ -3,7 +3,10 @@ use crossterm::{
     execute,
     terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use std::io::{self, Stdout};
+use std::{
+    fs::File,
+    io::{self, BufReader, Read, Stdout},
+};
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -34,6 +37,7 @@ pub fn start() -> Result<(), io::Error> {
                 .margin(2)
                 .constraints(
                     [
+                        Constraint::Length(7),
                         Constraint::Length(3),
                         Constraint::Min(2),
                         Constraint::Length(3),
@@ -42,9 +46,16 @@ pub fn start() -> Result<(), io::Error> {
                 )
                 .split(size);
 
+            // ASCII art banner
+            let header = Paragraph::new(read_header())
+                .style(Style::default().fg(Color::Cyan))
+                .block(Block::default().borders(Borders::NONE));
+
+            // Search menu
             let input = Paragraph::new("('/') to start typing")
                 .block(Block::default().borders(Borders::ALL).title("Search"));
 
+            // Weather forecast body
             let body = Block::default()
                 .title("Weather Forecast")
                 .borders(Borders::ALL)
@@ -52,6 +63,7 @@ pub fn start() -> Result<(), io::Error> {
                 .border_type(BorderType::Plain)
                 .style(Style::default().fg(Color::White));
 
+            // List of available commands
             let footer = Paragraph::new("Press 'q': QUIT program")
                 .style(Style::default().fg(Color::LightGreen))
                 .alignment(Alignment::Left)
@@ -63,9 +75,10 @@ pub fn start() -> Result<(), io::Error> {
                         .border_type(BorderType::Plain),
                 );
 
-            rect.render_widget(input, chunks[0]);
-            rect.render_widget(body, chunks[1]);
-            rect.render_widget(footer, chunks[2]);
+            rect.render_widget(header, chunks[0]);
+            rect.render_widget(input, chunks[1]);
+            rect.render_widget(body, chunks[2]);
+            rect.render_widget(footer, chunks[3]);
         })?;
 
         match process_keypress(&mut terminal) {
@@ -110,4 +123,20 @@ fn restore(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), io::
     terminal.show_cursor()?;
 
     Ok(())
+}
+
+fn read_header() -> String {
+    let mut header = String::new();
+
+    let file = match File::open("../ascii/header.txt") {
+        Ok(result) => result,
+        Err(_) => panic!("Unable to read file 'ascii.txt'"),
+    };
+
+    let mut buf_reader = BufReader::new(file);
+    buf_reader.read_to_string(&mut header).unwrap();
+
+    // TODO: default value for header if read from file fails
+
+    header
 }
