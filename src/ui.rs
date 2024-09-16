@@ -6,13 +6,16 @@ use crossterm::{
 use std::io::{self, Stdout};
 use tui::{
     backend::CrosstermBackend,
-    widgets::{Block, Borders},
+    layout::{Alignment, Constraint, Direction, Layout},
+    style::{Color, Style},
+    widgets::{Block, BorderType, Borders, Paragraph},
     Terminal,
 };
 
 #[derive(PartialEq, Eq)]
 enum Input {
     QUIT,
+    SEARCH,
 }
 
 pub fn start() -> Result<(), io::Error> {
@@ -24,16 +27,53 @@ pub fn start() -> Result<(), io::Error> {
     let mut terminal = Terminal::new(backend)?;
 
     loop {
-        terminal.draw(|f| {
-            let size = f.size();
-            let block = Block::default().title("Forecast").borders(Borders::ALL);
-            f.render_widget(block, size);
+        terminal.draw(|rect| {
+            let size = rect.size();
+            let chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .margin(2)
+                .constraints(
+                    [
+                        Constraint::Length(3),
+                        Constraint::Min(2),
+                        Constraint::Length(3),
+                    ]
+                    .as_ref(),
+                )
+                .split(size);
+
+            let input = Paragraph::new("('/') to start typing")
+                .block(Block::default().borders(Borders::ALL).title("Search"));
+
+            let body = Block::default()
+                .title("Weather Forecast")
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::White))
+                .border_type(BorderType::Plain)
+                .style(Style::default().fg(Color::White));
+
+            let footer = Paragraph::new("Press 'q': QUIT program")
+                .style(Style::default().fg(Color::LightGreen))
+                .alignment(Alignment::Left)
+                .block(
+                    Block::default()
+                        .borders(Borders::ALL)
+                        .style(Style::default().fg(Color::White))
+                        .title("Commands")
+                        .border_type(BorderType::Plain),
+                );
+
+            rect.render_widget(input, chunks[0]);
+            rect.render_widget(body, chunks[1]);
+            rect.render_widget(footer, chunks[2]);
         })?;
 
         match process_keypress(&mut terminal) {
             Some(input) => {
                 if input == Input::QUIT {
                     break;
+                } else if input == Input::SEARCH {
+                    ()
                 }
             }
             None => (),
@@ -52,6 +92,10 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
             let _ = restore(terminal);
             Some(Input::QUIT)
         }
+        Event::Key(KeyEvent {
+            code: KeyCode::Char('/'),
+            ..
+        }) => Some(Input::SEARCH),
         _ => None,
     }
 }
