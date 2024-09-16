@@ -112,6 +112,8 @@ pub fn start() -> Result<(), io::Error> {
     Ok(())
 }
 
+/// Detects single event (keypress) by user, and returns the appropriate command from Input enum
+/// Performs any necessary cleanup (i.e. restoring terminal settings) before returning.
 fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option<Input> {
     match read().expect("Failed to read user input") {
         Event::Key(KeyEvent {
@@ -129,6 +131,8 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
     }
 }
 
+/// Collect user input to use as query in the search menu widget
+/// Utilizes the App struct to store the current query string
 fn handle_input(app: &mut App) {
     app.input.clear();
 
