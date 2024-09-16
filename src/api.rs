@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 
 const URL: &str = "http://api.weatherapi.com/v1/current.json";
 
