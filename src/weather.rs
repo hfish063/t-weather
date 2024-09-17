@@ -41,6 +41,10 @@ struct Day {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Hour {
+    time: String,
+    temp_c: f32,
+    temp_f: f32,
+    is_day: u8,
     condition: Condition,
 }
 
