@@ -36,7 +36,7 @@ impl Forecast {
     }
 }
 
-pub fn get_weather_forecast(location: &str, days: Option<u8>) -> Option<Forecast> {
+pub fn get_current_weather(location: &str, days: Option<u8>) -> Option<Forecast> {
     match api_fetch(location, days) {
         Ok(result) => Some(result),
         Err(_) => None,
