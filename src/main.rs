@@ -1,4 +1,3 @@
-use api::get_weather_forecast;
 use clap::Parser;
 use dotenv;
 use ui::start;
@@ -24,6 +23,4 @@ fn main() {
     let args = Args::parse();
 
     let _ = start(&args.location);
-
-    let res = get_weather_forecast(&args.location, None);
 }

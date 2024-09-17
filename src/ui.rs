@@ -10,12 +10,12 @@ use std::{
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Paragraph},
+    style::{Color, Modifier, Style},
+    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Terminal,
 };
 
-use crate::api::get_weather_forecast;
+use crate::api::get_current_weather;
 
 struct App {
     input: String,
@@ -32,7 +32,7 @@ impl App {
 
     /// Send request to weather API, and update the forecast field with resulting data
     fn send_request(&mut self, location: &str) {
-        self.forecast = match get_weather_forecast(location, None) {
+        self.forecast = match get_current_weather(location, None) {
             Some(response) => response.to_string(),
             None => String::default(),
         }
@@ -43,6 +43,8 @@ impl App {
 enum Input {
     QUIT,
     SEARCH,
+    DOWN,
+    UP,
 }
 
 pub fn start(location: &str) -> Result<(), io::Error> {
@@ -55,6 +57,9 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
     let mut app = App::new();
     app.send_request(&location);
+
+    let items = vec!["Current", "Forecast"];
+    let mut selected_index: usize = 0;
 
     loop {
         terminal.draw(|rect| {
@@ -87,13 +92,41 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             let input = Paragraph::new(placeholder)
                 .block(Block::default().borders(Borders::ALL).title("Search(↵)"));
 
+            let horizontal_layout = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
+                .split(chunks[2]);
+
             // weather forecast body
-            let body = Block::default()
-                .title("Weather Forecast")
+            let body: Block<'_> = Block::default()
+                .title(match &items[selected_index] {
+                    &"Current" => "Current Weather",
+                    &"Forecast" => "Forecasted Weather",
+                    &&_ => "",
+                })
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::White))
                 .border_type(BorderType::Plain)
                 .style(Style::default().fg(Color::White));
+
+            // list weather forecast options
+            let mut list_items: Vec<ListItem> = vec![];
+
+            let mut curr: usize = 0;
+            for &item in &items {
+                if curr == selected_index {
+                    list_items.push(ListItem::new(item).style(Style::default().bg(Color::Gray)));
+                } else {
+                    list_items.push(ListItem::new(item));
+                }
+
+                curr += 1;
+            }
+
+            let menu = List::new(list_items)
+                .block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
+                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
+                .highlight_symbol(">>");
 
             let data = &app.forecast;
 
@@ -115,7 +148,8 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
             rect.render_widget(header, chunks[0]);
             rect.render_widget(input, chunks[1]);
-            rect.render_widget(forecast, chunks[2]);
+            rect.render_widget(forecast, horizontal_layout[1]);
+            rect.render_widget(menu, horizontal_layout[0]);
             rect.render_widget(footer, chunks[3]);
         })?;
 
@@ -126,6 +160,10 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                 } else if input == Input::SEARCH {
                     handle_input(&mut app);
                     continue;
+                } else if input == Input::DOWN {
+                    selected_index = 1;
+                } else if input == Input::UP {
+                    selected_index = 0;
                 }
             }
             None => (),
@@ -152,6 +190,13 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
             code: KeyCode::Char('/'),
             ..
         }) => Some(Input::SEARCH),
+        Event::Key(KeyEvent {
+            code: KeyCode::Down,
+            ..
+        }) => Some(Input::DOWN),
+        Event::Key(KeyEvent {
+            code: KeyCode::Up, ..
+        }) => Some(Input::UP),
         _ => None,
     }
 }
@@ -217,7 +262,7 @@ fn read_header() -> String {
 }
 
 /// Convert data to user-friendly format, and include corresponding ASCII art for the conditions
-fn format_weather_data(data: &str) -> Option<String> {
+fn render_data(data: &str) -> Option<String> {
     let result = String::default();
 
     // read_condition_art(data.condition)
