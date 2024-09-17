@@ -11,7 +11,7 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
+    widgets::{Block, BorderType, Borders, Cell, List, ListItem, Paragraph, Row, Table, Wrap},
     Terminal,
 };
 
@@ -94,31 +94,47 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                 .constraints([Constraint::Percentage(25), Constraint::Percentage(75)].as_ref())
                 .split(chunks[2]);
 
-            // weather forecast body
-            let body: Block<'_> = Block::default()
-                .title(match &items[selected_index] {
-                    &"Current" => "Current Weather",
-                    &"Forecast" => "Forecasted Weather",
-                    &&_ => "",
-                })
-                .borders(Borders::ALL)
-                .border_style(Style::default().fg(Color::White))
-                .border_type(BorderType::Plain)
-                .style(Style::default().fg(Color::White));
-
             // list weather forecast options
             let menu = render_menu(&items, selected_index);
 
+            // weather data (current / forecast)
             let data = &app.forecast;
 
-            let forecast = render_forecast(data, body);
+            match &items[selected_index] {
+                &"Forecast" => {
+                    let table_chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints(
+                            [
+                                Constraint::Percentage(33),
+                                Constraint::Percentage(34),
+                                Constraint::Percentage(33),
+                            ]
+                            .as_ref(),
+                        )
+                        .split(horizontal_layout[1]);
+
+                    let morning = render_table("Morning");
+                    let afternoon = render_table("Afternoon");
+                    let evening = render_table("Evening");
+
+                    rect.render_widget(morning, table_chunks[0]);
+                    rect.render_widget(afternoon, table_chunks[1]);
+                    rect.render_widget(evening, table_chunks[2]);
+                }
+                &"Current" => {
+                    let current = render_forecast(data);
+
+                    rect.render_widget(current, horizontal_layout[1]);
+                }
+                &&_ => (),
+            }
 
             // list of available commands
             let footer = render_footer();
 
             rect.render_widget(header, chunks[0]);
             rect.render_widget(input, chunks[1]);
-            rect.render_widget(forecast, horizontal_layout[1]);
             rect.render_widget(menu, horizontal_layout[0]);
             rect.render_widget(footer, chunks[3]);
         })?;
@@ -177,10 +193,31 @@ fn render_menu<'a>(items: &'a Vec<&str>, selected_index: usize) -> List<'a> {
     List::new(list_items).block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
 }
 
-fn render_forecast<'a>(data: &'a String, body: Block<'a>) -> Paragraph<'a> {
+fn render_table<'a>(title: &'a str) -> Table<'a> {
+    Table::new(vec![
+        Row::new(vec![
+            Cell::from("Cell 11").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 12").style(Style::default().fg(Color::White)),
+        ]),
+        Row::new(vec![
+            Cell::from("Cell 21").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 22").style(Style::default().fg(Color::White)),
+        ]),
+    ])
+    .style(Style::default().fg(Color::White))
+    .header(Row::new(vec!["Col 1", "Col 2"]).style(Style::default().fg(Color::Yellow)))
+    .block(Block::default().title(title).borders(Borders::ALL))
+    .widths([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+}
+
+fn render_forecast<'a>(data: &'a String) -> Paragraph<'a> {
     Paragraph::new(data.to_string())
-        .style(Style::default().fg(Color::White))
-        .block(body)
+        .style(Style::default().fg(Color::Yellow))
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White)),
+        )
 }
 
 fn render_footer<'a>() -> Paragraph<'a> {
