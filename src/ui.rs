@@ -79,9 +79,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                 .split(size);
 
             // ASCII art banner
-            let header = Paragraph::new(read_header())
-                .style(Style::default().fg(Color::Cyan))
-                .block(Block::default().borders(Borders::NONE));
+            let header = render_header();
 
             let placeholder = match app.input.is_empty() {
                 true => "('/') to start typing",
@@ -89,8 +87,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             };
 
             // search menu
-            let input = Paragraph::new(placeholder)
-                .block(Block::default().borders(Borders::ALL).title("Search(↵)"));
+            let input = render_search_menu(placeholder);
 
             let horizontal_layout = Layout::default()
                 .direction(Direction::Horizontal)
@@ -130,21 +127,10 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
             let data = &app.forecast;
 
-            let forecast = Paragraph::new(data.to_string())
-                .style(Style::default().fg(Color::White))
-                .block(body);
+            let forecast = render_forecast(data, body);
 
             // list of available commands
-            let footer = Paragraph::new("Press 'q': QUIT program")
-                .style(Style::default().fg(Color::LightGreen))
-                .alignment(Alignment::Left)
-                .block(
-                    Block::default()
-                        .borders(Borders::ALL)
-                        .style(Style::default().fg(Color::White))
-                        .title("Commands")
-                        .border_type(BorderType::Plain),
-                );
+            let footer = render_footer();
 
             rect.render_widget(header, chunks[0]);
             rect.render_widget(input, chunks[1]);
@@ -173,6 +159,35 @@ pub fn start(location: &str) -> Result<(), io::Error> {
     println!("{}", app.input);
 
     Ok(())
+}
+
+fn render_header<'a>() -> Paragraph<'a> {
+    Paragraph::new(read_header())
+        .style(Style::default().fg(Color::Cyan))
+        .block(Block::default().borders(Borders::NONE))
+}
+
+fn render_search_menu<'a>(placeholder: &'a str) -> Paragraph<'a> {
+    Paragraph::new(placeholder).block(Block::default().borders(Borders::ALL).title("Search(↵)"))
+}
+
+fn render_forecast<'a>(data: &'a String, body: Block<'a>) -> Paragraph<'a> {
+    Paragraph::new(data.to_string())
+        .style(Style::default().fg(Color::White))
+        .block(body)
+}
+
+fn render_footer<'a>() -> Paragraph<'a> {
+    Paragraph::new("Press 'q': QUIT program")
+        .style(Style::default().fg(Color::LightGreen))
+        .alignment(Alignment::Left)
+        .block(
+            Block::default()
+                .borders(Borders::ALL)
+                .style(Style::default().fg(Color::White))
+                .title("Commands")
+                .border_type(BorderType::Plain),
+        )
 }
 
 /// Detects single event (keypress) by user, and returns the appropriate command from Input enum
