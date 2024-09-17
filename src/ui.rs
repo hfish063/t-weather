@@ -147,9 +147,13 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                     handle_input(&mut app);
                     continue;
                 } else if input == Input::DOWN {
-                    selected_index = 1;
+                    if selected_index < items.len() - 1 {
+                        selected_index += 1;
+                    }
                 } else if input == Input::UP {
-                    selected_index = 0;
+                    if selected_index > 0 {
+                        selected_index -= 1;
+                    }
                 }
             }
             None => (),
