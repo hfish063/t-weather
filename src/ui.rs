@@ -107,23 +107,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                 .style(Style::default().fg(Color::White));
 
             // list weather forecast options
-            let mut list_items: Vec<ListItem> = vec![];
-
-            let mut curr: usize = 0;
-            for &item in &items {
-                if curr == selected_index {
-                    list_items.push(ListItem::new(item).style(Style::default().bg(Color::Gray)));
-                } else {
-                    list_items.push(ListItem::new(item));
-                }
-
-                curr += 1;
-            }
-
-            let menu = List::new(list_items)
-                .block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
-                .highlight_style(Style::default().add_modifier(Modifier::ITALIC))
-                .highlight_symbol(">>");
+            let menu = render_menu(&items, selected_index);
 
             let data = &app.forecast;
 
@@ -173,6 +157,23 @@ fn render_header<'a>() -> Paragraph<'a> {
 
 fn render_search_menu<'a>(placeholder: &'a str) -> Paragraph<'a> {
     Paragraph::new(placeholder).block(Block::default().borders(Borders::ALL).title("Search(↵)"))
+}
+
+fn render_menu<'a>(items: &'a Vec<&str>, selected_index: usize) -> List<'a> {
+    let mut list_items: Vec<ListItem> = vec![];
+
+    let mut curr: usize = 0;
+    for &item in items {
+        if curr == selected_index {
+            list_items.push(ListItem::new(item).style(Style::default().bg(Color::Gray)));
+        } else {
+            list_items.push(ListItem::new(item));
+        }
+
+        curr += 1;
+    }
+
+    List::new(list_items).block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
 }
 
 fn render_forecast<'a>(data: &'a String, body: Block<'a>) -> Paragraph<'a> {
