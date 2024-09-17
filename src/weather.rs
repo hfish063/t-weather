@@ -8,7 +8,7 @@ pub struct Weather {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Location {
+pub struct Location {
     name: String,
     region: String,
     country: String,
@@ -16,7 +16,7 @@ struct Location {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Current {
+pub struct Current {
     temp_c: f32,
     temp_f: f32,
     is_day: u8,
@@ -24,23 +24,23 @@ struct Current {
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Condition {
+pub struct Condition {
     text: String,
     code: u16,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Forecast {
+pub struct Forecast {
     forecastday: Vec<Day>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Day {
+pub struct Day {
     hour: Vec<Hour>,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
-struct Hour {
+pub struct Hour {
     time: String,
     temp_c: f32,
     temp_f: f32,
