@@ -85,7 +85,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
             // search menu
             let input = Paragraph::new(placeholder)
-                .block(Block::default().borders(Borders::ALL).title("Search"));
+                .block(Block::default().borders(Borders::ALL).title("Search(↵)"));
 
             // weather forecast body
             let body = Block::default()
