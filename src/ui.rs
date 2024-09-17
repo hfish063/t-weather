@@ -215,3 +215,16 @@ fn read_header() -> String {
 
     header
 }
+
+/// Convert data to user-friendly format, and include corresponding ASCII art for the conditions
+fn format_weather_data(data: &str) -> Option<String> {
+    let result = String::default();
+
+    // read_condition_art(data.condition)
+
+    Some(result)
+}
+
+fn read_condition_art(condition: &str) -> String {
+    String::default()
+}
