@@ -1,5 +1,3 @@
-use serde::{Deserialize, Serialize};
-
 use super::weather::Weather;
 
 const URL: &str = "http://api.weatherapi.com/v1/forecast.json";
