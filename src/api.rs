@@ -30,6 +30,12 @@ struct Condition {
     code: u16,
 }
 
+impl Forecast {
+    pub fn to_string(self) -> String {
+        format!("{:#?}\n{:#?}", &self.location, &self.current)
+    }
+}
+
 pub fn get_weather_forecast(location: &str, days: Option<u8>) -> Option<Forecast> {
     match api_fetch(location, days) {
         Ok(result) => Some(result),

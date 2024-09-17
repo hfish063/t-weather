@@ -15,14 +15,26 @@ use tui::{
     Terminal,
 };
 
+use crate::api::get_weather_forecast;
+
 struct App {
     input: String,
+    forecast: String,
 }
 
 impl App {
     fn new() -> App {
         App {
             input: String::new(),
+            forecast: String::new(),
+        }
+    }
+
+    /// Send request to weather API, and update the forecast field with resulting data
+    fn send_request(&mut self, location: &str) {
+        self.forecast = match get_weather_forecast(location, None) {
+            Some(response) => response.to_string(),
+            None => String::default(),
         }
     }
 }
@@ -33,7 +45,7 @@ enum Input {
     SEARCH,
 }
 
-pub fn start() -> Result<(), io::Error> {
+pub fn start(location: &str) -> Result<(), io::Error> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
@@ -42,6 +54,7 @@ pub fn start() -> Result<(), io::Error> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
+    app.send_request(&location);
 
     loop {
         terminal.draw(|rect| {
@@ -65,8 +78,13 @@ pub fn start() -> Result<(), io::Error> {
                 .style(Style::default().fg(Color::Cyan))
                 .block(Block::default().borders(Borders::NONE));
 
+            let placeholder = match app.input.is_empty() {
+                true => "('/') to start typing",
+                false => &app.input,
+            };
+
             // search menu
-            let input = Paragraph::new("('/') to start typing")
+            let input = Paragraph::new(placeholder)
                 .block(Block::default().borders(Borders::ALL).title("Search"));
 
             // weather forecast body
@@ -76,6 +94,12 @@ pub fn start() -> Result<(), io::Error> {
                 .border_style(Style::default().fg(Color::White))
                 .border_type(BorderType::Plain)
                 .style(Style::default().fg(Color::White));
+
+            let data = &app.forecast;
+
+            let forecast = Paragraph::new(data.to_string())
+                .style(Style::default().fg(Color::White))
+                .block(body);
 
             // list of available commands
             let footer = Paragraph::new("Press 'q': QUIT program")
@@ -91,7 +115,7 @@ pub fn start() -> Result<(), io::Error> {
 
             rect.render_widget(header, chunks[0]);
             rect.render_widget(input, chunks[1]);
-            rect.render_widget(body, chunks[2]);
+            rect.render_widget(forecast, chunks[2]);
             rect.render_widget(footer, chunks[3]);
         })?;
 
@@ -101,6 +125,7 @@ pub fn start() -> Result<(), io::Error> {
                     break;
                 } else if input == Input::SEARCH {
                     handle_input(&mut app);
+                    continue;
                 }
             }
             None => (),
@@ -151,6 +176,13 @@ fn handle_input(app: &mut App) {
             Event::Key(KeyEvent {
                 code: KeyCode::Esc, ..
             }) => break,
+            Event::Key(KeyEvent {
+                code: KeyCode::Enter,
+                ..
+            }) => {
+                app.send_request(&app.input.clone());
+                break;
+            }
             _ => (),
         }
     }

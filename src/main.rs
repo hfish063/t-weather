@@ -23,7 +23,7 @@ fn main() {
 
     let args = Args::parse();
 
-    let _ = start();
+    let _ = start(&args.location);
 
     let res = get_weather_forecast(&args.location, None);
 }
