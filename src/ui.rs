@@ -10,7 +10,7 @@ use std::{
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
-    style::{Color, Modifier, Style},
+    style::{Color, Style},
     widgets::{Block, BorderType, Borders, List, ListItem, Paragraph},
     Terminal,
 };
@@ -124,22 +124,23 @@ pub fn start(location: &str) -> Result<(), io::Error> {
         })?;
 
         match process_keypress(&mut terminal) {
-            Some(input) => {
-                if input == Input::QUIT {
-                    break;
-                } else if input == Input::SEARCH {
+            Some(input) => match input {
+                Input::QUIT => break,
+                Input::SEARCH => {
                     handle_input(&mut app);
                     continue;
-                } else if input == Input::DOWN {
+                }
+                Input::DOWN => {
                     if selected_index < items.len() - 1 {
                         selected_index += 1;
                     }
-                } else if input == Input::UP {
+                }
+                Input::UP => {
                     if selected_index > 0 {
                         selected_index -= 1;
                     }
                 }
-            }
+            },
             None => (),
         }
     }
@@ -268,13 +269,11 @@ fn restore(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), io::
 fn read_header() -> String {
     let mut header = String::new();
 
-    let file = match File::open("../ascii/header.txt") {
-        Ok(result) => result,
-        Err(_) => panic!("Unable to read file 'ascii.txt'"),
-    };
-
+    let file = File::open("../ascii/header.txt").expect("Unable to read file 'ascii/header.txt'");
     let mut buf_reader = BufReader::new(file);
-    buf_reader.read_to_string(&mut header).unwrap();
+    buf_reader
+        .read_to_string(&mut header)
+        .expect("Failed to read header file");
 
     // TODO: default value for header if read from file fails
 
