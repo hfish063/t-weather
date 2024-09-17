@@ -11,7 +11,7 @@ use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
     style::{Color, Style},
-    widgets::{Block, BorderType, Borders, Cell, List, ListItem, Paragraph, Row, Table, Wrap},
+    widgets::{Block, BorderType, Borders, Cell, List, ListItem, Paragraph, Row, Table},
     Terminal,
 };
 
@@ -315,17 +315,4 @@ fn read_header() -> String {
     // TODO: default value for header if read from file fails
 
     header
-}
-
-/// Convert data to user-friendly format, and include corresponding ASCII art for the conditions
-fn render_data(data: &str) -> Option<String> {
-    let result = String::default();
-
-    // read_condition_art(data.condition)
-
-    Some(result)
-}
-
-fn read_condition_art(condition: &str) -> String {
-    String::default()
 }

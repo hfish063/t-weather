@@ -1,6 +1,13 @@
-use super::weather::Weather;
+use crate::weather::Weather;
 
 const URL: &str = "http://api.weatherapi.com/v1/forecast.json";
+
+pub fn get_current_weather(location: &str, days: Option<u8>) -> Option<Weather> {
+    match api_fetch(location, days) {
+        Ok(result) => Some(result),
+        Err(_) => None,
+    }
+}
 
 pub fn api_fetch(location: &str, days: Option<u8>) -> Result<Weather, reqwest::Error> {
     let api_key: &str = &std::env::var("KEY").unwrap();
