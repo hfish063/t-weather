@@ -17,14 +17,14 @@ use tui::{
 
 use crate::{api::get_current_weather, weather::Weather};
 
-struct App {
+struct AppState {
     input: String,
     weather: Option<Weather>,
 }
 
-impl App {
-    fn new() -> App {
-        App {
+impl AppState {
+    fn new() -> AppState {
+        AppState {
             input: String::new(),
             weather: None,
         }
@@ -79,7 +79,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
-    let mut app = App::new();
+    let mut app = AppState::new();
     app.weather = get_current_weather(location, None);
 
     let items = vec!["Current", "Forecast"];
