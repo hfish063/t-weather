@@ -49,7 +49,7 @@ pub struct Hour {
 }
 
 impl Weather {
-    pub fn to_string(self) -> String {
+    pub fn to_string(&self) -> String {
         format!(
             "{:#?}\n{:#?}\n{:#?}",
             &self.location, &self.current, &self.forecast

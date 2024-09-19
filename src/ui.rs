@@ -15,26 +15,18 @@ use tui::{
     Terminal,
 };
 
-use crate::api::get_current_weather;
+use crate::{api::get_current_weather, weather::Weather};
 
 struct App {
     input: String,
-    forecast: String,
+    weather: Option<Weather>,
 }
 
 impl App {
     fn new() -> App {
         App {
             input: String::new(),
-            forecast: String::new(),
-        }
-    }
-
-    /// Send request to weather API, and update the forecast field with resulting data
-    fn send_request(&mut self, location: &str) {
-        self.forecast = match get_current_weather(location, None) {
-            Some(response) => response.to_string(),
-            None => String::default(),
+            weather: None,
         }
     }
 
@@ -62,7 +54,7 @@ impl App {
                     code: KeyCode::Enter,
                     ..
                 }) => {
-                    self.send_request(&self.input.clone());
+                    self.weather = get_current_weather(&self.input, None);
                     break;
                 }
                 _ => (),
@@ -88,7 +80,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
     let mut terminal = Terminal::new(backend)?;
 
     let mut app = App::new();
-    app.send_request(&location);
+    app.weather = get_current_weather(location, None);
 
     let items = vec!["Current", "Forecast"];
     let mut selected_index: usize = 0;
@@ -130,7 +122,10 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             let menu = render_menu(&items, selected_index);
 
             // weather data (current / forecast)
-            let data = &app.forecast;
+            let data = match &app.weather {
+                Some(data) => data.to_string(),
+                None => String::default(),
+            };
 
             match &items[selected_index] {
                 &"Forecast" => {
@@ -158,7 +153,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                     rect.render_widget(night, table_chunks[3])
                 }
                 &"Current" => {
-                    let current = render_forecast(data);
+                    let current = render_forecast(&data);
 
                     rect.render_widget(current, horizontal_layout[1]);
                 }
