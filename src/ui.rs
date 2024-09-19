@@ -37,6 +37,38 @@ impl App {
             None => String::default(),
         }
     }
+
+    /// Collect user input to use as query in the search menu widget
+    /// Utilizes the App struct to store the current query string
+    fn handle_input(&mut self) {
+        self.input.clear();
+
+        loop {
+            match read().expect("Failed to read user input") {
+                Event::Key(KeyEvent {
+                    code: KeyCode::Char(c),
+                    ..
+                }) => self.input.push(c),
+                Event::Key(KeyEvent {
+                    code: KeyCode::Backspace,
+                    ..
+                }) => {
+                    self.input.pop();
+                }
+                Event::Key(KeyEvent {
+                    code: KeyCode::Esc, ..
+                }) => break,
+                Event::Key(KeyEvent {
+                    code: KeyCode::Enter,
+                    ..
+                }) => {
+                    self.send_request(&self.input.clone());
+                    break;
+                }
+                _ => (),
+            }
+        }
+    }
 }
 
 #[derive(PartialEq, Eq)]
@@ -106,9 +138,10 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                         .direction(Direction::Vertical)
                         .constraints(
                             [
-                                Constraint::Percentage(33),
-                                Constraint::Percentage(34),
-                                Constraint::Percentage(33),
+                                Constraint::Percentage(25),
+                                Constraint::Percentage(25),
+                                Constraint::Percentage(25),
+                                Constraint::Percentage(25),
                             ]
                             .as_ref(),
                         )
@@ -117,10 +150,12 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                     let morning = render_table("Morning");
                     let afternoon = render_table("Afternoon");
                     let evening = render_table("Evening");
+                    let night = render_table("Night");
 
                     rect.render_widget(morning, table_chunks[0]);
                     rect.render_widget(afternoon, table_chunks[1]);
                     rect.render_widget(evening, table_chunks[2]);
+                    rect.render_widget(night, table_chunks[3])
                 }
                 &"Current" => {
                     let current = render_forecast(data);
@@ -143,7 +178,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             Some(input) => match input {
                 Input::QUIT => break,
                 Input::SEARCH => {
-                    handle_input(&mut app);
+                    app.handle_input();
                     continue;
                 }
                 Input::DOWN => {
@@ -256,38 +291,6 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
             code: KeyCode::Up, ..
         }) => Some(Input::UP),
         _ => None,
-    }
-}
-
-/// Collect user input to use as query in the search menu widget
-/// Utilizes the App struct to store the current query string
-fn handle_input(app: &mut App) {
-    app.input.clear();
-
-    loop {
-        match read().expect("Failed to read user input") {
-            Event::Key(KeyEvent {
-                code: KeyCode::Char(c),
-                ..
-            }) => app.input.push(c),
-            Event::Key(KeyEvent {
-                code: KeyCode::Backspace,
-                ..
-            }) => {
-                app.input.pop();
-            }
-            Event::Key(KeyEvent {
-                code: KeyCode::Esc, ..
-            }) => break,
-            Event::Key(KeyEvent {
-                code: KeyCode::Enter,
-                ..
-            }) => {
-                app.send_request(&app.input.clone());
-                break;
-            }
-            _ => (),
-        }
     }
 }
 
