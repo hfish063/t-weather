@@ -15,7 +15,7 @@ use tui::{
     Terminal,
 };
 
-use crate::{api::get_current_weather, weather::Weather};
+use crate::{api::get_current_weather, utils::read_file, weather::Weather};
 
 struct AppState {
     input: String,
@@ -123,39 +123,24 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
             // weather data (current / forecast)
             let data = match &app.weather {
-                Some(data) => data.to_string(),
+                Some(data) => format!("{}\n{}", read_weather_icon(data), data.to_string()),
                 None => String::default(),
             };
 
             match &items[selected_index] {
-                &"Forecast" => {
-                    let table_chunks = Layout::default()
-                        .direction(Direction::Vertical)
-                        .constraints(
-                            [
-                                Constraint::Percentage(25),
-                                Constraint::Percentage(25),
-                                Constraint::Percentage(25),
-                                Constraint::Percentage(25),
-                            ]
-                            .as_ref(),
-                        )
-                        .split(horizontal_layout[1]);
-
-                    let morning = render_table("Morning");
-                    let afternoon = render_table("Afternoon");
-                    let evening = render_table("Evening");
-                    let night = render_table("Night");
-
-                    rect.render_widget(morning, table_chunks[0]);
-                    rect.render_widget(afternoon, table_chunks[1]);
-                    rect.render_widget(evening, table_chunks[2]);
-                    rect.render_widget(night, table_chunks[3])
-                }
+                &"Forecast" => {}
                 &"Current" => {
                     let current = render_forecast(&data);
 
-                    rect.render_widget(current, horizontal_layout[1]);
+                    let table_chunks = Layout::default()
+                        .direction(Direction::Vertical)
+                        .constraints(
+                            [Constraint::Percentage(35), Constraint::Percentage(65)].as_ref(),
+                        )
+                        .split(horizontal_layout[1]);
+
+                    rect.render_widget(current, table_chunks[0]);
+                    rect.render_widget(render_table("Current Conditions"), table_chunks[1])
                 }
                 &&_ => (),
             }
@@ -226,23 +211,48 @@ fn render_menu<'a>(items: &'a Vec<&str>, selected_index: usize) -> List<'a> {
 fn render_table<'a>(title: &'a str) -> Table<'a> {
     Table::new(vec![
         Row::new(vec![
-            Cell::from("Cell 11").style(Style::default().fg(Color::White)),
+            Cell::from("Morning").style(Style::default().fg(Color::White)),
             Cell::from("Cell 12").style(Style::default().fg(Color::White)),
-        ]),
+            Cell::from("Cell 13").style(Style::default().fg(Color::White)),
+        ])
+        .bottom_margin(1),
         Row::new(vec![
-            Cell::from("Cell 21").style(Style::default().fg(Color::White)),
+            Cell::from("Afternoon").style(Style::default().fg(Color::White)),
             Cell::from("Cell 22").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 23").style(Style::default().fg(Color::White)),
+        ])
+        .bottom_margin(1),
+        Row::new(vec![
+            Cell::from("Evening").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 32").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 33").style(Style::default().fg(Color::White)),
+        ])
+        .bottom_margin(1),
+        Row::new(vec![
+            Cell::from("Night").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 42").style(Style::default().fg(Color::White)),
+            Cell::from("Cell 43").style(Style::default().fg(Color::White)),
         ]),
     ])
     .style(Style::default().fg(Color::White))
-    .header(Row::new(vec!["Col 1", "Col 2"]).style(Style::default().fg(Color::Yellow)))
+    .header(
+        Row::new(vec!["Time", "Temperature", "Condition"])
+            .style(Style::default().fg(Color::Yellow)),
+    )
     .block(Block::default().title(title).borders(Borders::ALL))
-    .widths([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
+    .widths(
+        [
+            Constraint::Percentage(33),
+            Constraint::Percentage(34),
+            Constraint::Percentage(33),
+        ]
+        .as_ref(),
+    )
 }
 
 fn render_forecast<'a>(data: &'a String) -> Paragraph<'a> {
     Paragraph::new(data.to_string())
-        .style(Style::default().fg(Color::Yellow))
+        .style(Style::default().fg(Color::White))
         .block(
             Block::default()
                 .borders(Borders::ALL)
@@ -302,15 +312,16 @@ fn restore(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), io::
 }
 
 fn read_header() -> String {
-    let mut header = String::new();
+    read_file("../ascii/header.txt")
+}
 
-    let file = File::open("../ascii/header.txt").expect("Unable to read file 'ascii/header.txt'");
-    let mut buf_reader = BufReader::new(file);
-    buf_reader
-        .read_to_string(&mut header)
-        .expect("Failed to read header file");
+fn read_weather_icon(data: &Weather) -> String {
+    let condition = format_condition_string(&data.current.condition.text);
 
-    // TODO: default value for header if read from file fails
+    let path = format!("../ascii/{}.txt", condition);
+    read_file(&path)
+}
 
-    header
+fn format_condition_string(condition_str: &str) -> String {
+    condition_str.replace(" ", "_")
 }

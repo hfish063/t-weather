@@ -4,6 +4,7 @@ use ui::start;
 
 mod api;
 mod ui;
+mod utils;
 mod weather;
 
 #[derive(Parser, Debug)]
