@@ -9,7 +9,7 @@ pub fn get_current_weather(location: &str, days: Option<u8>) -> Option<Weather> 
     }
 }
 
-pub fn api_fetch(location: &str, days: Option<u8>) -> Result<Weather, reqwest::Error> {
+fn api_fetch(location: &str, days: Option<u8>) -> Result<Weather, reqwest::Error> {
     let api_key: &str = &std::env::var("KEY").unwrap();
     let params = [
         ("key", api_key),
