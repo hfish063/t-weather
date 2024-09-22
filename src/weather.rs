@@ -253,7 +253,7 @@ pub struct Condition3 {
 impl Weather {
     pub fn to_string(&self) -> String {
         format!(
-            "{:#?}\n{:#?}\n{:#?}\n{:#?}",
+            "{:#?}\n{:#?}\n{:#?}C\n{:#?}F",
             &self.location.name,
             &self.current.condition.text,
             &self.current.temp_c,
