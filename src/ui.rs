@@ -1,9 +1,14 @@
 use crossterm::{
     event::{read, DisableMouseCapture, EnableMouseCapture, Event, KeyCode, KeyEvent},
     execute,
-    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
+    terminal::{
+        self, disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+    },
 };
-use std::io::{self, Stdout};
+use std::{
+    io::{self, Stdout},
+    panic,
+};
 use tui::{
     backend::CrosstermBackend,
     layout::{Alignment, Constraint, Direction, Layout},
@@ -120,7 +125,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
             // weather data (current / forecast)
             let data = match &app.weather {
-                Some(data) => format!("{}\n{}", read_weather_icon(data), data.to_string()),
+                Some(data) => format!("{}", data.to_string()),
                 None => String::default(),
             };
 
@@ -137,7 +142,10 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                         .split(horizontal_layout[1]);
 
                     rect.render_widget(current, table_chunks[0]);
-                    rect.render_widget(render_table("Current Conditions"), table_chunks[1])
+                    rect.render_widget(
+                        render_table("Current Conditions", app.weather.clone()),
+                        table_chunks[1],
+                    )
                 }
                 &&_ => (),
             }
@@ -205,12 +213,27 @@ fn render_menu<'a>(items: &'a Vec<&str>, selected_index: usize) -> List<'a> {
     List::new(list_items).block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
 }
 
-fn render_table<'a>(title: &'a str) -> Table<'a> {
+fn render_table<'a>(title: &'a str, data: Option<Weather>) -> Table<'a> {
+    let data: Weather = match data {
+        Some(data) => data,
+        None => panic!("Failed to retrieve weather data"),
+    };
+
+    // extract morning/afternoon/evening/night times from data to fill table
+    let morning = match data.get_morning_data() {
+        Some(data) => data,
+        None => {
+            let _ = terminal::disable_raw_mode();
+            panic!();
+        }
+    };
+
     Table::new(vec![
         Row::new(vec![
             Cell::from("Morning").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 12").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 13").style(Style::default().fg(Color::White)),
+            Cell::from(format!("{}C / {}F", &morning.temp_c, &morning.temp_f))
+                .style(Style::default().fg(Color::White)),
+            Cell::from(morning.condition.text.to_string()).style(Style::default().fg(Color::White)),
         ])
         .bottom_margin(1),
         Row::new(vec![
@@ -306,6 +329,11 @@ fn restore(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), io::
     terminal.show_cursor()?;
 
     Ok(())
+}
+
+fn exit(msg: &str) {
+    let _ = terminal::disable_raw_mode();
+    panic!("{}", msg);
 }
 
 fn read_header() -> String {

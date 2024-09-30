@@ -1,4 +1,7 @@
+use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
+
+use crate::utils::epoch_time;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -259,5 +262,41 @@ impl Weather {
             &self.current.temp_c,
             &self.current.temp_f
         )
+    }
+
+    pub fn get_morning_data(&self) -> Option<&Hour> {
+        for hour in &self.forecast.forecastday[0].hour {
+            if hour.time_epoch == epoch_time(6) {
+                return Some(&hour);
+            }
+        }
+        None
+    }
+
+    pub fn get_afternoon_data(&self) -> Option<&Hour> {
+        for hour in &self.forecast.forecastday[0].hour {
+            if hour.time_epoch == epoch_time(12) {
+                return Some(&hour);
+            }
+        }
+        None
+    }
+
+    pub fn get_evening_data(&self) -> Option<&Hour> {
+        for hour in &self.forecast.forecastday[0].hour {
+            if hour.time_epoch == epoch_time(18) {
+                return Some(&hour);
+            }
+        }
+        None
+    }
+
+    pub fn get_night_data(&self) -> Option<&Hour> {
+        for hour in &self.forecast.forecastday[0].hour {
+            if hour.time_epoch == epoch_time(0) {
+                return Some(&hour);
+            }
+        }
+        None
     }
 }
