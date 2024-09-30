@@ -1,4 +1,3 @@
-use chrono::{TimeZone, Utc};
 use serde::{Deserialize, Serialize};
 
 use crate::utils::epoch_time;
