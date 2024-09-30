@@ -65,6 +65,21 @@ impl AppState {
     }
 }
 
+struct TerminalState {
+    stdout: Stdout,
+    terminal: Terminal<CrosstermBackend<Stdout>>,
+}
+
+impl TerminalState {
+    fn new() -> Result<TerminalState, io::Error> {
+        let stdout = io::stdout();
+
+        let terminal = Terminal::new(CrosstermBackend::new(io::stdout()))?;
+
+        Ok(TerminalState { stdout, terminal })
+    }
+}
+
 #[derive(PartialEq, Eq)]
 enum Input {
     QUIT,
@@ -75,20 +90,22 @@ enum Input {
 
 pub fn start(location: &str) -> Result<(), io::Error> {
     enable_raw_mode()?;
-    let mut stdout = io::stdout();
-    execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
 
-    let backend = CrosstermBackend::new(stdout);
-    let mut terminal = Terminal::new(backend)?;
+    let mut terminal_state = TerminalState::new().unwrap();
+    execute!(
+        terminal_state.stdout,
+        EnterAlternateScreen,
+        EnableMouseCapture
+    )?;
 
-    let mut app = AppState::new();
-    app.weather = get_current_weather(location, None);
+    let mut app_state = AppState::new();
+    app_state.weather = get_current_weather(location, None);
 
     let items = vec!["Current", "Forecast"];
     let mut selected_index: usize = 0;
 
     loop {
-        terminal.draw(|rect| {
+        terminal_state.terminal.draw(|rect| {
             let size = rect.size();
             let chunks = Layout::default()
                 .direction(Direction::Vertical)
@@ -107,9 +124,9 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             // ASCII art banner
             let header = render_header();
 
-            let placeholder = match app.input.is_empty() {
+            let placeholder = match app_state.input.is_empty() {
                 true => "('/') to start typing",
-                false => &app.input,
+                false => &app_state.input,
             };
 
             // search menu
@@ -124,7 +141,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             let menu = render_menu(&items, selected_index);
 
             // weather data (current / forecast)
-            let data = match &app.weather {
+            let data = match &app_state.weather {
                 Some(data) => format!("{}", data.to_string()),
                 None => String::default(),
             };
@@ -143,7 +160,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
                     rect.render_widget(current, table_chunks[0]);
                     rect.render_widget(
-                        render_table("Current Conditions", app.weather.clone()),
+                        render_table("Current Conditions", app_state.weather.clone()),
                         table_chunks[1],
                     )
                 }
@@ -159,11 +176,11 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             rect.render_widget(footer, chunks[3]);
         })?;
 
-        match process_keypress(&mut terminal) {
+        match process_keypress(&mut terminal_state.terminal) {
             Some(input) => match input {
                 Input::QUIT => break,
                 Input::SEARCH => {
-                    app.handle_input();
+                    app_state.handle_input();
                     continue;
                 }
                 Input::DOWN => {
@@ -181,7 +198,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
         }
     }
 
-    println!("{}", app.input);
+    println!("{}", app_state.input);
 
     Ok(())
 }
