@@ -18,6 +18,7 @@ use tui::{
 use crate::{api::get_current_weather, utils::read_file, weather::Weather};
 
 struct AppState {
+    is_search_active: bool,
     input: String,
     weather: Weather,
 }
@@ -25,46 +26,25 @@ struct AppState {
 impl AppState {
     fn new(weather: Weather) -> AppState {
         AppState {
+            is_search_active: false,
             input: String::new(),
             weather,
         }
     }
 
-    /// Collect user input to use as query in the search menu widget
-    /// Utilizes the App struct to store the current query string
-    fn handle_input(&mut self) {
-        self.input.clear();
+    fn update_input(&mut self, c: char) {
+        self.input.push(c);
+    }
 
-        loop {
-            match read().expect("Failed to read user input") {
-                Event::Key(KeyEvent {
-                    code: KeyCode::Char(c),
-                    ..
-                }) => self.input.push(c),
-                Event::Key(KeyEvent {
-                    code: KeyCode::Backspace,
-                    ..
-                }) => {
-                    self.input.pop();
-                }
-                Event::Key(KeyEvent {
-                    code: KeyCode::Esc, ..
-                }) => break,
-                Event::Key(KeyEvent {
-                    code: KeyCode::Enter,
-                    ..
-                }) => {
-                    self.weather = match get_current_weather(&self.input, None) {
-                        Some(data) => data,
-                        None => {
-                            let _ = disable_raw_mode();
-                            panic!("Failed to retrieve weather data");
-                        }
-                    };
-                    break;
-                }
-                _ => (),
-            }
+    fn remove_last_char(&mut self) {
+        self.input.pop();
+    }
+
+    fn toggle_search(&mut self) {
+        self.is_search_active = !self.is_search_active;
+
+        if !self.is_search_active {
+            self.input.clear();
         }
     }
 }
@@ -90,6 +70,10 @@ enum Input {
     SEARCH,
     DOWN,
     UP,
+    CHAR,
+    ESCAPE,
+    REMOVE,
+    ENTER,
 }
 
 pub fn start(location: &str) -> Result<(), io::Error> {
@@ -184,12 +168,11 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             rect.render_widget(footer, chunks[3]);
         })?;
 
-        match process_keypress(&mut terminal_state.terminal) {
+        match process_keypress(&mut terminal_state.terminal, &mut app_state) {
             Some(input) => match input {
                 Input::QUIT => break,
                 Input::SEARCH => {
-                    app_state.handle_input();
-                    continue;
+                    app_state.toggle_search();
                 }
                 Input::DOWN => {
                     if selected_index < items.len() - 1 {
@@ -200,6 +183,25 @@ pub fn start(location: &str) -> Result<(), io::Error> {
                     if selected_index > 0 {
                         selected_index -= 1;
                     }
+                }
+                Input::CHAR => {
+                    continue;
+                }
+                Input::ESCAPE => {
+                    app_state.toggle_search();
+                }
+                Input::REMOVE => {
+                    app_state.remove_last_char();
+                }
+                Input::ENTER => {
+                    app_state.weather = match get_current_weather(&app_state.input, None) {
+                        Some(data) => data,
+                        None => {
+                            let _ = restore(&mut terminal_state.terminal);
+                            return Ok(());
+                        }
+                    };
+                    app_state.toggle_search();
                 }
             },
             None => (),
@@ -317,19 +319,34 @@ fn render_footer<'a>() -> Paragraph<'a> {
 
 /// Detects single event (keypress) by user, and returns the appropriate command from Input enum
 /// Performs any necessary cleanup (i.e. restoring terminal settings) before returning.
-fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option<Input> {
+fn process_keypress(
+    terminal: &mut Terminal<CrosstermBackend<Stdout>>,
+    app_state: &mut AppState,
+) -> Option<Input> {
     match read().expect("Failed to read user input") {
         Event::Key(KeyEvent {
-            code: KeyCode::Char('q'),
+            code: KeyCode::Char(c),
             ..
         }) => {
-            let _ = restore(terminal);
-            Some(Input::QUIT)
+            if app_state.is_search_active {
+                app_state.update_input(c);
+                return Some(Input::CHAR);
+            }
+            match c {
+                'q' => {
+                    let _ = restore(terminal);
+                    Some(Input::QUIT)
+                }
+                '/' => {
+                    // app_state.toggle_search();
+                    Some(Input::SEARCH)
+                }
+                _ => None,
+            }
         }
         Event::Key(KeyEvent {
-            code: KeyCode::Char('/'),
-            ..
-        }) => Some(Input::SEARCH),
+            code: KeyCode::Esc, ..
+        }) => Some(Input::ESCAPE),
         Event::Key(KeyEvent {
             code: KeyCode::Down,
             ..
@@ -337,6 +354,14 @@ fn process_keypress(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Option
         Event::Key(KeyEvent {
             code: KeyCode::Up, ..
         }) => Some(Input::UP),
+        Event::Key(KeyEvent {
+            code: KeyCode::Backspace,
+            ..
+        }) => Some(Input::REMOVE),
+        Event::Key(KeyEvent {
+            code: KeyCode::Enter,
+            ..
+        }) => Some(Input::ENTER),
         _ => None,
     }
 }
