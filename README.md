@@ -16,3 +16,6 @@ The project is implemented using the reqwest::**blocking** module, however wait 
 In order to obtain an API key, you will need to register for a free account at [weatherapi.com](https://www.weatherapi.com/).
 
 Once you have been granted a key, simply add it to your .env file and you're good to go!
+
+## Examples
+![current weather conditions](screenshots/current.png)
