@@ -354,22 +354,6 @@ fn restore(terminal: &mut Terminal<CrosstermBackend<Stdout>>) -> Result<(), io::
     Ok(())
 }
 
-fn exit(msg: &str) {
-    let _ = terminal::disable_raw_mode();
-    panic!("{}", msg);
-}
-
 fn read_header() -> String {
     read_file("../ascii/header.txt")
-}
-
-fn read_weather_icon(data: &Weather) -> String {
-    let condition = format_condition_str(&data.current.condition.text);
-
-    let path = format!("../ascii/{}.txt", condition);
-    read_file(&path)
-}
-
-fn format_condition_str(condition_str: &str) -> String {
-    condition_str.replace(" ", "_")
 }
