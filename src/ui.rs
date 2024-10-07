@@ -296,6 +296,7 @@ fn render_forecast<'a>(data: &'a String) -> Paragraph<'a> {
         .style(Style::default().fg(Color::White))
         .block(
             Block::default()
+                .title("Current Conditions")
                 .borders(Borders::ALL)
                 .style(Style::default().fg(Color::White)),
         )
