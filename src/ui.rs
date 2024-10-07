@@ -21,14 +21,14 @@ use crate::{api::get_current_weather, utils::read_file, weather::Weather};
 
 struct AppState {
     input: String,
-    weather: Option<Weather>,
+    weather: Weather,
 }
 
 impl AppState {
-    fn new() -> AppState {
+    fn new(weather: Weather) -> AppState {
         AppState {
             input: String::new(),
-            weather: None,
+            weather,
         }
     }
 
@@ -56,7 +56,13 @@ impl AppState {
                     code: KeyCode::Enter,
                     ..
                 }) => {
-                    self.weather = get_current_weather(&self.input, None);
+                    self.weather = match get_current_weather(&self.input, None) {
+                        Some(data) => data,
+                        None => {
+                            let _ = disable_raw_mode();
+                            panic!("Failed to retrieve weather data");
+                        }
+                    };
                     break;
                 }
                 _ => (),
@@ -98,8 +104,15 @@ pub fn start(location: &str) -> Result<(), io::Error> {
         EnableMouseCapture
     )?;
 
-    let mut app_state = AppState::new();
-    app_state.weather = get_current_weather(location, None);
+    let weather = match get_current_weather(location, None) {
+        Some(data) => data,
+        None => {
+            let _ = restore(&mut terminal_state.terminal);
+            return Ok(());
+        }
+    };
+
+    let mut app_state = AppState::new(weather);
 
     let items = vec!["Current", "Forecast"];
     let mut selected_index: usize = 0;
@@ -141,10 +154,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             let menu = render_menu(&items, selected_index);
 
             // weather data (current / forecast)
-            let data = match &app_state.weather {
-                Some(data) => format!("{}", data.to_string()),
-                None => String::default(),
-            };
+            let data = &app_state.weather.to_string();
 
             match &items[selected_index] {
                 &"Forecast" => {}
@@ -230,20 +240,12 @@ fn render_menu<'a>(items: &'a Vec<&str>, selected_index: usize) -> List<'a> {
     List::new(list_items).block(Block::default().title("Options(↓↑)").borders(Borders::ALL))
 }
 
-fn render_table<'a>(title: &'a str, data: Option<Weather>) -> Table<'a> {
-    let data: Weather = match data {
-        Some(data) => data,
-        None => panic!("Failed to retrieve weather data"),
-    };
-
+fn render_table<'a>(title: &'a str, data: Weather) -> Table<'a> {
     // extract morning/afternoon/evening/night times from data to fill table
-    let morning = match data.get_morning_data() {
-        Some(data) => data,
-        None => {
-            let _ = terminal::disable_raw_mode();
-            panic!();
-        }
-    };
+    let morning = data.get_morning_data().unwrap();
+    let afternoon = data.get_afternoon_data().unwrap();
+    let evening = data.get_evening_data().unwrap();
+    let night = data.get_night_data().unwrap();
 
     Table::new(vec![
         Row::new(vec![
@@ -255,20 +257,24 @@ fn render_table<'a>(title: &'a str, data: Option<Weather>) -> Table<'a> {
         .bottom_margin(1),
         Row::new(vec![
             Cell::from("Afternoon").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 22").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 23").style(Style::default().fg(Color::White)),
+            Cell::from(format!("{}C / {}F", &afternoon.temp_c, &afternoon.temp_f))
+                .style(Style::default().fg(Color::White)),
+            Cell::from(afternoon.condition.text.to_string())
+                .style(Style::default().fg(Color::White)),
         ])
         .bottom_margin(1),
         Row::new(vec![
             Cell::from("Evening").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 32").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 33").style(Style::default().fg(Color::White)),
+            Cell::from(format!("{}C / {}F", &evening.temp_c, &evening.temp_f))
+                .style(Style::default().fg(Color::White)),
+            Cell::from(evening.condition.text.to_string()).style(Style::default().fg(Color::White)),
         ])
         .bottom_margin(1),
         Row::new(vec![
             Cell::from("Night").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 42").style(Style::default().fg(Color::White)),
-            Cell::from("Cell 43").style(Style::default().fg(Color::White)),
+            Cell::from(format!("{}C / {}F", &night.temp_c, &night.temp_f))
+                .style(Style::default().fg(Color::White)),
+            Cell::from(night.condition.text.to_string()).style(Style::default().fg(Color::White)),
         ]),
     ])
     .style(Style::default().fg(Color::White))
@@ -358,12 +364,12 @@ fn read_header() -> String {
 }
 
 fn read_weather_icon(data: &Weather) -> String {
-    let condition = format_condition_string(&data.current.condition.text);
+    let condition = format_condition_str(&data.current.condition.text);
 
     let path = format!("../ascii/{}.txt", condition);
     read_file(&path)
 }
 
-fn format_condition_string(condition_str: &str) -> String {
+fn format_condition_str(condition_str: &str) -> String {
     condition_str.replace(" ", "_")
 }

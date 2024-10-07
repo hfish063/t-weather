@@ -1,6 +1,5 @@
+use chrono::Local;
 use serde::{Deserialize, Serialize};
-
-use crate::utils::epoch_time;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -264,38 +263,41 @@ impl Weather {
     }
 
     pub fn get_morning_data(&self) -> Option<&Hour> {
-        for hour in &self.forecast.forecastday[0].hour {
-            if hour.time_epoch == epoch_time(6) {
-                return Some(&hour);
-            }
-        }
-        None
+        self.get_data_for_time(6)
     }
 
     pub fn get_afternoon_data(&self) -> Option<&Hour> {
-        for hour in &self.forecast.forecastday[0].hour {
-            if hour.time_epoch == epoch_time(12) {
-                return Some(&hour);
-            }
-        }
-        None
+        self.get_data_for_time(12)
     }
 
     pub fn get_evening_data(&self) -> Option<&Hour> {
+        self.get_data_for_time(18)
+    }
+
+    pub fn get_night_data(&self) -> Option<&Hour> {
+        self.get_data_for_time(0)
+    }
+
+    fn get_data_for_time(&self, time: u32) -> Option<&Hour> {
         for hour in &self.forecast.forecastday[0].hour {
-            if hour.time_epoch == epoch_time(18) {
+            let split_hour: Vec<&str> = hour.time.split_whitespace().collect();
+            let hour_str = split_hour[1];
+
+            if hour_str == self.time_str(time) {
                 return Some(&hour);
             }
         }
         None
     }
 
-    pub fn get_night_data(&self) -> Option<&Hour> {
-        for hour in &self.forecast.forecastday[0].hour {
-            if hour.time_epoch == epoch_time(0) {
-                return Some(&hour);
-            }
+    /// Formats hour in the form 0x:00
+    fn time_str(&self, hour: u32) -> String {
+        let mut hour_str = format!("{}:00", hour);
+
+        if hour < 10 {
+            hour_str = format!("0{}:00", hour);
         }
-        None
+
+        hour_str
     }
 }
