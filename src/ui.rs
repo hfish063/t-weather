@@ -170,7 +170,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
                     rect.render_widget(current, table_chunks[0]);
                     rect.render_widget(
-                        render_table("Current Conditions", app_state.weather.clone()),
+                        render_table("Today's Forecast", app_state.weather.clone()),
                         table_chunks[1],
                     )
                 }
