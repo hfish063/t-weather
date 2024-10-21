@@ -135,8 +135,11 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             // weather data (current / forecast)
             let data = &app_state.weather.to_string();
 
+            // change data display based on sub-menu selection
             match &items[selected_index] {
+                // display the forecast data for upcoming week
                 &"Forecast" => {}
+                // display the forecast data for today
                 &"Current" => {
                     let current = render_forecast(&data);
 
