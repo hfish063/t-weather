@@ -277,19 +277,6 @@ impl Weather {
         self.get_data_for_time(0)
     }
 
-    /// Returns list of weather forecast data for corresponding number of days
-    /// Data includes the hour of morning/afternoon/evening/night for each subsequent day
-    fn get_data_for_days(&self, days: usize) -> Option<()> {
-        if days > 0 && days <= 7 {
-            for i in 0..days {
-                let curr = &self.forecast.forecastday[i].hour;
-            }
-            Some(())
-        } else {
-            None
-        }
-    }
-
     fn get_data_for_time(&self, time: u32) -> Option<&Hour> {
         for hour in &self.forecast.forecastday[0].hour {
             let split_hour: Vec<&str> = hour.time.split_whitespace().collect();

@@ -93,7 +93,7 @@ pub fn start(location: &str) -> Result<(), io::Error> {
 
     let mut app_state = AppState::new(weather);
 
-    let items = vec!["Current", "Forecast"];
+    let items = vec!["Current"];
     let mut selected_index: usize = 0;
 
     loop {
@@ -135,29 +135,19 @@ pub fn start(location: &str) -> Result<(), io::Error> {
             // weather data (current / forecast)
             let data = &app_state.weather.to_string();
 
-            // change data display based on sub-menu selection
-            match &items[selected_index] {
-                // display the forecast data for upcoming week
-                &"Forecast" => {}
-                // display the forecast data for today
-                &"Current" => {
-                    let current = render_forecast(&data);
+            // display the forecast data for today
+            let current = render_forecast(&data);
 
-                    let table_chunks = Layout::default()
-                        .direction(Direction::Vertical)
-                        .constraints(
-                            [Constraint::Percentage(35), Constraint::Percentage(65)].as_ref(),
-                        )
-                        .split(horizontal_layout[1]);
+            let table_chunks = Layout::default()
+                .direction(Direction::Vertical)
+                .constraints([Constraint::Percentage(35), Constraint::Percentage(65)].as_ref())
+                .split(horizontal_layout[1]);
 
-                    rect.render_widget(current, table_chunks[0]);
-                    rect.render_widget(
-                        render_table("Today's Forecast", app_state.weather.clone()),
-                        table_chunks[1],
-                    )
-                }
-                &&_ => (),
-            }
+            rect.render_widget(current, table_chunks[0]);
+            rect.render_widget(
+                render_table("Today's Forecast", app_state.weather.clone()),
+                table_chunks[1],
+            );
 
             // list of available commands
             let footer = render_footer();
