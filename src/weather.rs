@@ -262,36 +262,38 @@ impl Weather {
     }
 
     pub fn get_morning_data(&self) -> Option<&Hour> {
-        self.get_data_for_time(6)
+        self.get_data_for_time(&self.forecast.forecastday[0], 6)
     }
 
     pub fn get_afternoon_data(&self) -> Option<&Hour> {
-        self.get_data_for_time(12)
+        self.get_data_for_time(&self.forecast.forecastday[0], 12)
     }
 
     pub fn get_evening_data(&self) -> Option<&Hour> {
-        self.get_data_for_time(18)
+        self.get_data_for_time(&self.forecast.forecastday[0], 18)
     }
 
     pub fn get_night_data(&self) -> Option<&Hour> {
-        self.get_data_for_time(0)
+        self.get_data_for_time(&self.forecast.forecastday[0], 0)
     }
 
     /// Returns list of weather forecast data for corresponding number of days
     /// Data includes the hour of morning/afternoon/evening/night for each subsequent day
-    fn get_data_for_days(&self, days: usize) -> Option<()> {
+    pub fn get_data_for_days(&self, days: usize) -> Option<Vec<&Forecastday>> {
+        let mut result: Vec<&Forecastday> = vec![];
         if days > 0 && days <= 7 {
             for i in 0..days {
-                let curr = &self.forecast.forecastday[i].hour;
+                let curr = &self.forecast.forecastday[i];
+                result.push(curr);
             }
-            Some(())
+            Some((result))
         } else {
             None
         }
     }
 
-    fn get_data_for_time(&self, time: u32) -> Option<&Hour> {
-        for hour in &self.forecast.forecastday[0].hour {
+    fn get_data_for_time<'a>(&'a self, day: &'a Forecastday, time: u32) -> Option<&Hour> {
+        for hour in &day.hour {
             let split_hour: Vec<&str> = hour.time.split_whitespace().collect();
             let hour_str = split_hour[1];
 
@@ -311,5 +313,20 @@ impl Weather {
         }
 
         hour_str
+    }
+}
+
+/// Returns list of weather forecast data for corresponding number of days
+/// Data includes the hour of morning/afternoon/evening/night for each subsequent day
+pub fn get_data_for_days(weather: &Weather, days: usize) -> Option<Vec<&Forecastday>> {
+    let mut result: Vec<&Forecastday> = vec![];
+    if days > 0 && days <= 7 {
+        for i in 0..days {
+            let curr = &weather.forecast.forecastday[i];
+            result.push(curr);
+        }
+        Some((result))
+    } else {
+        None
     }
 }

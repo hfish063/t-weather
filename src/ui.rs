@@ -12,7 +12,11 @@ use tui::{
     Terminal,
 };
 
-use crate::{api::get_current_weather, utils::read_file, weather::Weather};
+use crate::{
+    api::get_current_weather,
+    utils::read_file,
+    weather::{get_data_for_days, Weather},
+};
 
 struct AppState {
     is_search_active: bool,
